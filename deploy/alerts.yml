@@ -1,0 +1,25 @@
+groups:
+  - name: assistant-app
+    rules:
+      - alert: LLMErrorRateHigh
+        expr: |
+          sum(rate(gen_ai_client_operation_duration_seconds_count{error_type!=""}[5m]))
+            / sum(rate(gen_ai_client_operation_duration_seconds_count[5m])) > 0.05
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: "More than 5% of LLM calls are failing"
+
+      - alert: AssistantSlowResponses
+        expr: histogram_quantile(0.95, sum by (le) (rate(assistant_request_duration_seconds_bucket[5m]))) > 15
+        for: 10m
+        labels: { severity: warn }
+        annotations:
+          summary: "p95 time to answer a chat message is above 15s"
+
+      - alert: ToolFailuresHigh
+        expr: sum(rate(assistant_tool_calls_total{status="error"}[5m])) > 0.1
+        for: 5m
+        labels: { severity: warn }
+        annotations:
+          summary: "Tools are failing repeatedly"

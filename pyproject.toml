@@ -1,0 +1,13 @@
+[project]
+name = "assistant-app"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "qdrant-client>=1.19.1",
+    "requests>=2.34.2",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["backend/tests"]
+asyncio_mode = "auto"

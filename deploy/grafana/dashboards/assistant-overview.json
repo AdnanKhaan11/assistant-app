@@ -1,0 +1,53 @@
+{
+  "title": "IT Support Assistant - Overview",
+  "uid": "assistant-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    { "id": 1, "type": "timeseries", "title": "Chat requests / sec (by outcome)", "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "expr": "sum by (outcome) (rate(assistant_requests_total[5m]))", "legendFormat": "{{outcome}}" } ] },
+
+    { "id": 2, "type": "timeseries", "title": "Answer latency p50 / p95", "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(assistant_request_duration_seconds_bucket[5m])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(assistant_request_duration_seconds_bucket[5m])))", "legendFormat": "p95" } ] },
+
+    { "id": 3, "type": "timeseries", "title": "LLM latency p95 by model", "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "expr": "histogram_quantile(0.95, sum by (le, gen_ai_request_model) (rate(gen_ai_client_operation_duration_seconds_bucket[5m])))", "legendFormat": "{{gen_ai_request_model}}" } ] },
+
+    { "id": 4, "type": "timeseries", "title": "Tokens / sec (input vs output)", "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "expr": "sum by (gen_ai_token_type) (rate(gen_ai_client_token_usage_sum[5m]))", "legendFormat": "{{gen_ai_token_type}}" } ] },
+
+    { "id": 5, "type": "timeseries", "title": "LLM errors / sec (by error type)", "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "expr": "sum by (error_type) (rate(gen_ai_client_operation_duration_seconds_count{error_type!=\"\"}[5m]))", "legendFormat": "{{error_type}}" } ] },
+
+    { "id": 6, "type": "timeseries", "title": "Tool calls / sec (by tool, status)", "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "expr": "sum by (assistant_tool_name, status) (rate(assistant_tool_calls_total[5m]))", "legendFormat": "{{assistant_tool_name}} / {{status}}" } ] },
+
+    { "id": 7, "type": "stat", "title": "Human decisions on risky actions (1h)", "gridPos": { "x": 0, "y": 24, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "expr": "sum by (decision) (increase(assistant_confirmations_total[1h]))", "legendFormat": "{{decision}}" } ] },
+
+    { "id": 8, "type": "piechart", "title": "Tickets by category (1h)", "gridPos": { "x": 8, "y": 24, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "expr": "sum by (category) (increase(assistant_classifications_total[1h]))", "legendFormat": "{{category}}" } ] },
+
+    { "id": 9, "type": "stat", "title": "Active tickets in memory", "gridPos": { "x": 16, "y": 24, "w": 8, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "expr": "max(assistant_active_tickets)" } ] },
+
+    { "id": 10, "type": "logs", "title": "Application logs (Loki)", "gridPos": { "x": 0, "y": 30, "w": 24, "h": 10 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [ { "expr": "{service_name=\"assistant-app\"}" } ] }
+  ]
+}

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#101a2a" />
+    <meta name="description" content="Nexus private IT support workspace." />
+    <title>Nexus | IT Support Workspace</title>
+    <script src="route.js?v=backend-origin-1"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="empty" id="auth-root" aria-labelledby="auth-title">
+      <p class="empty-kicker">NEXUS SUPPORT</p>
+      <h1 id="auth-title">Welcome back</h1>
+      <p id="auth-description">Sign in to open your private support workspace.</p>
+      <div class="notice error" id="auth-error" role="alert" hidden></div>
+      <form id="auth-form" class="steps" autocomplete="on">
+        <label for="auth-email">Email</label>
+        <input
+          class="btn-quiet"
+          id="auth-email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          required
+          maxlength="254"
+        />
+        <label for="auth-password">Password</label>
+        <input
+          class="btn-quiet"
+          id="auth-password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          minlength="12"
+          maxlength="128"
+        />
+        <button class="btn btn-primary" id="auth-submit" type="submit">Sign in</button>
+      </form>
+      <button class="trace-btn" id="auth-mode" type="button">Create an account</button>
+    </main>
+
+    <div class="shell" id="app-root" hidden>
+      <aside class="rail" aria-label="Private conversations">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">N</span>
+          <span class="brand-copy">
+            <span class="brand-name">NEXUS <span>SUPPORT</span></span>
+            <span class="brand-caption">PRIVATE IT WORKSPACE</span>
+          </span>
+        </div>
+        <button class="btn-new" id="new-conversation" type="button">＋ New conversation</button>
+        <nav class="ticket-nav" aria-label="Conversation history">
+          <h2 class="rail-heading">YOUR CONVERSATIONS</h2>
+          <ul class="ticket-list" id="conversation-list"></ul>
+          <p class="rail-heading" id="conversation-empty">No conversations yet</p>
+        </nav>
+        <div class="rail-foot">
+          <span class="secure-indicator" aria-hidden="true"></span>
+          <span id="account-email"></span>
+          <button class="trace-btn" id="admin-nav" type="button" hidden>Admin</button>
+          <button class="trace-btn" id="sign-out" type="button">Sign out</button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar" id="conversation-topbar">
+          <div class="ticket-head">
+            <span class="workspace-label">PRIVATE CONVERSATION</span>
+            <h1 id="conversation-title">Choose a conversation</h1>
+            <span class="ticket-id" id="conversation-id"></span>
+          </div>
+          <button class="btn-quiet" id="rename-conversation" type="button" disabled>Rename</button>
+          <button class="btn-quiet" id="delete-conversation" type="button" disabled>Delete</button>
+        </header>
+
+        <section class="log" id="message-log" role="log" aria-live="polite" aria-label="Conversation messages">
+          <div class="thread" id="message-thread"></div>
+        </section>
+        <div class="notice error" id="app-error" role="alert" hidden></div>
+        <form class="composer" id="composer" autocomplete="off">
+          <label class="sr-only" for="message-input">Message the IT support assistant</label>
+          <div class="composer-box">
+            <textarea id="message-input" rows="1" maxlength="4000" placeholder="Describe what's wrong" disabled></textarea>
+            <button class="btn-send" id="send-message" type="submit" disabled>
+              <span>Send</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+          <p class="composer-hint">Your conversations are private to your account. Actions require your approval.</p>
+        </form>
+        <section class="log" id="admin-root" aria-labelledby="admin-title" hidden>
+          <div class="thread">
+            <header class="card-head">
+              <div>
+                <p class="workspace-label">NEXUS ADMINISTRATION</p>
+                <h1 id="admin-title">Administrator dashboard</h1>
+              </div>
+              <button class="btn-quiet" id="admin-back" type="button">Back to conversations</button>
+            </header>
+            <nav class="approval-actions" aria-label="Administrator sections">
+              <button class="btn btn-secondary" id="admin-overview-tab" type="button" aria-current="page">Overview</button>
+              <button class="btn btn-secondary" id="admin-users-tab" type="button">Users</button>
+              <button class="btn btn-secondary" id="admin-audit-tab" type="button">Audit log</button>
+            </nav>
+            <section class="card" id="admin-overview" aria-labelledby="admin-overview-title">
+              <div class="card-body">
+                <h2 id="admin-overview-title">System overview</h2>
+                <p id="admin-health" role="status">Checking service status...</p>
+                <p class="summary">Runtime AI settings and audit browsing are not available in the current backend API.</p>
+              </div>
+            </section>
+            <section class="card" id="admin-users" aria-labelledby="admin-users-title" hidden>
+              <div class="card-body">
+                <h2 id="admin-users-title">User accounts</h2>
+                <p id="admin-users-status" role="status"></p>
+                <ul class="ticket-list" id="admin-user-list"></ul>
+                <div class="approval-actions">
+                  <button class="btn btn-secondary" id="admin-users-previous" type="button" disabled>Previous</button>
+                  <span id="admin-users-page" aria-live="polite"></span>
+                  <button class="btn btn-secondary" id="admin-users-next" type="button" disabled>Next</button>
+                </div>
+              </div>
+            </section>
+            <section class="card" id="admin-audit" aria-labelledby="admin-audit-title" hidden>
+              <div class="card-body">
+                <h2 id="admin-audit-title">Account audit log</h2>
+                <p id="admin-audit-status" role="status" aria-live="polite"></p>
+                <button class="btn btn-secondary" id="admin-audit-refresh" type="button">Refresh events</button>
+                <ul class="ticket-list" id="admin-audit-list"></ul>
+                <div class="approval-actions">
+                  <button class="btn btn-secondary" id="admin-audit-previous" type="button" disabled>Previous</button>
+                  <span id="admin-audit-page" aria-live="polite"></span>
+                  <button class="btn btn-secondary" id="admin-audit-next" type="button" disabled>Next</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="api.js?v=auth-flow-2"></script>
+    <script src="conversations.js"></script>
+    <script src="auth.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>

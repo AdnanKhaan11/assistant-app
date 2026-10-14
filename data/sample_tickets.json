@@ -1,0 +1,5 @@
+[
+  {"id": "T-1001", "details": "User reports Zoom drops every few minutes since morning; office Wi-Fi unstable. Router reboot already tried."},
+  {"id": "T-1002", "details": "Laptop shows 'low disk space' warning; C: drive 97% full."},
+  {"id": "T-1003", "details": "Docking station not detected after Windows update; external monitors stay black."}
+]
