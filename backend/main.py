@@ -19,16 +19,23 @@ from uuid import uuid4
 from fastapi import FastAPI, File, HTTPException, Path as APIPath, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from qdrant_client import AsyncQdrantClient
 
 from backend.assistant import AssistantOptions, AssistantService, AssistantStreamEvent
 from backend.auth_api import router as auth_router
 from backend.conversation_api import router as conversation_router
+from backend.runtime_ai_api import router as runtime_ai_router
+from backend.user_settings_api import router as user_settings_router
 from backend.llm import LLMError, create_provider
 from backend.memory.attachment_store import AttachmentStore
 from backend.memory.auth_store import AuthStore
 from backend.memory.conversation_store import ConversationStore
 from backend.memory.long_term import LongTermMemory
+from backend.memory.semantic import QdrantSemanticMemory
 from backend.memory.short_term import ShortTermMemory
+from backend.services.huggingface_embeddings import HuggingFaceEmbeddingClient
+from backend.services.knowledge_ingestion import KnowledgeIngestionService
+from backend.services.knowledge_retrieval import KnowledgeRetrievalService, KnowledgeRetrieverPort
 from backend.schemas import (
     ActionResultResponse,
     AssessmentResponse,
@@ -38,8 +45,8 @@ from backend.schemas import (
 )
 from backend.services.advisor import AdvisorService
 from backend.services.authentication import AuthenticationService
-from backend.services.conversations import ConversationService
 from backend.services.classifier import ClassifierService
+from backend.services.conversations import ConversationService
 from backend.services.summarizer import SummarizerService
 from backend.telemetry import (
     TelemetryConfig, current_trace_id, get_metrics, init_telemetry, instrument_fastapi, instrument_httpx,
@@ -65,6 +72,7 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 def build_assistant(
     settings: Settings,
     telemetry_config: TelemetryConfig,
+    knowledge_retriever: KnowledgeRetrieverPort | None = None,
 ) -> tuple[AssistantService, ShortTermMemory, object, AttachmentStore]:
     llm = create_provider(
         settings.llm_provider, settings.llm_model, settings.llm_api_key,
@@ -81,6 +89,7 @@ def build_assistant(
         classifier=ClassifierService(llm), summarizer=SummarizerService(llm), advisor=AdvisorService(llm),
         tools=tools, short_term=short_term, long_term=LongTermMemory(settings.db_path),
         attachment_store=attachment_store,
+        knowledge_retriever=knowledge_retriever,
         options=AssistantOptions(
             max_attachments_per_message=settings.max_attachments_per_message,
             vision_enabled=settings.llm_supports_vision,
@@ -97,7 +106,10 @@ async def lifespan(app: FastAPI):
     instrument_httpx()                         # 2) before any httpx client is created
 
     settings = get_settings()
-    assistant, short_term, llm, attachment_store = build_assistant(settings, telemetry_config)
+    knowledge_retriever, semantic_memory = await _initialize_knowledge(settings)
+    assistant, short_term, llm, attachment_store = build_assistant(
+        settings, telemetry_config, knowledge_retriever
+    )
     app.state.authentication = AuthenticationService(AuthStore(settings.db_path))
     app.state.conversations = ConversationService(ConversationStore(settings.db_path))
     app.state.assistant = assistant
@@ -108,14 +120,61 @@ async def lifespan(app: FastAPI):
     )
     logger.info("assistant ready", extra={"provider": settings.llm_provider, "model": llm.model})
     yield
+    if semantic_memory is not None:
+        await semantic_memory.close()
     await llm.aclose()
     shutdown_telemetry()                       # flush buffered spans/metrics/logs
+
+
+async def _initialize_knowledge(
+    settings: Settings,
+) -> tuple[KnowledgeRetrievalService | None, QdrantSemanticMemory | None]:
+    """Index the configured manual at startup when both hosted services are configured."""
+    if not settings.hf_token or not settings.qdrant_url:
+        return None, None
+    embedder = HuggingFaceEmbeddingClient(
+        endpoint=settings.hf_embedding_url,
+        model=settings.hf_embedding_model,
+        token=settings.hf_token,
+    )
+    client: AsyncQdrantClient | None = None
+    semantic_memory: QdrantSemanticMemory | None = None
+    try:
+        client = AsyncQdrantClient(
+            url=settings.qdrant_url,
+            api_key=settings.qdrant_api_key,
+            timeout=10,
+        )
+        async with asyncio.timeout(60):
+            probe = await embedder.embed(["IT troubleshooting manual dimension check"])
+            if len(probe) != 1:
+                raise ValueError("Embedding provider returned an invalid dimension probe.")
+            semantic_memory = QdrantSemanticMemory(
+                client,
+                collection=settings.qdrant_collection,
+                vector_size=len(probe[0]),
+            )
+            chunk_count = await KnowledgeIngestionService(embedder, semantic_memory).index_pdf(
+                settings.knowledge_pdf_path
+            )
+        logger.info("knowledge manual indexed", extra={"chunk_count": chunk_count})
+        return KnowledgeRetrievalService(embedder, semantic_memory), semantic_memory
+    except Exception as error:
+        logger.warning(
+            "knowledge indexing unavailable; continuing without semantic retrieval",
+            extra={"error_type": type(error).__name__},
+        )
+        if client is not None:
+            await client.close()
+        return None, None
 
 
 app = FastAPI(title="IT Support Assistant", version="0.1.0", lifespan=lifespan)
 instrument_fastapi(app)
 app.include_router(auth_router)
 app.include_router(conversation_router)
+app.include_router(runtime_ai_router)
+app.include_router(user_settings_router)
 
 
 @app.middleware("http")

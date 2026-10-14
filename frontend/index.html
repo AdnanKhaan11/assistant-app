@@ -2,19 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#101a2a" />
     <meta name="description" content="Nexus private IT support workspace." />
     <title>Nexus | IT Support Workspace</title>
     <script src="route.js?v=backend-origin-1"></script>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=prompt-layout-2" />
   </head>
   <body>
     <main class="empty" id="auth-root" aria-labelledby="auth-title">
       <p class="empty-kicker">NEXUS SUPPORT</p>
       <h1 id="auth-title">Welcome back</h1>
-      <p id="auth-description">Sign in to open your private support workspace.</p>
+      <p id="auth-description">
+        Sign in to open your private support workspace.
+      </p>
       <div class="notice error" id="auth-error" role="alert" hidden></div>
       <form id="auth-form" class="steps" autocomplete="on">
         <label for="auth-email">Email</label>
@@ -38,9 +43,13 @@
           minlength="12"
           maxlength="128"
         />
-        <button class="btn btn-primary" id="auth-submit" type="submit">Sign in</button>
+        <button class="btn btn-primary" id="auth-submit" type="submit">
+          Sign in
+        </button>
       </form>
-      <button class="trace-btn" id="auth-mode" type="button">Create an account</button>
+      <button class="trace-btn" id="auth-mode" type="button">
+        Create an account
+      </button>
     </main>
 
     <div class="shell" id="app-root" hidden>
@@ -52,17 +61,25 @@
             <span class="brand-caption">PRIVATE IT WORKSPACE</span>
           </span>
         </div>
-        <button class="btn-new" id="new-conversation" type="button">＋ New conversation</button>
+        <button class="btn-new" id="new-conversation" type="button">
+          ＋ New conversation
+        </button>
         <nav class="ticket-nav" aria-label="Conversation history">
           <h2 class="rail-heading">YOUR CONVERSATIONS</h2>
           <ul class="ticket-list" id="conversation-list"></ul>
-          <p class="rail-heading" id="conversation-empty">No conversations yet</p>
+          <p class="rail-heading" id="conversation-empty">
+            No conversations yet
+          </p>
         </nav>
         <div class="rail-foot">
           <span class="secure-indicator" aria-hidden="true"></span>
           <span id="account-email"></span>
-          <button class="trace-btn" id="admin-nav" type="button" hidden>Admin</button>
-          <button class="trace-btn" id="sign-out" type="button">Sign out</button>
+          <button class="trace-btn" id="admin-nav" type="button" hidden>
+            Admin
+          </button>
+          <button class="trace-btn" id="sign-out" type="button">
+            Sign out
+          </button>
         </div>
       </aside>
 
@@ -73,68 +90,298 @@
             <h1 id="conversation-title">Choose a conversation</h1>
             <span class="ticket-id" id="conversation-id"></span>
           </div>
-          <button class="btn-quiet" id="rename-conversation" type="button" disabled>Rename</button>
-          <button class="btn-quiet" id="delete-conversation" type="button" disabled>Delete</button>
+          <button
+            class="btn-quiet"
+            id="rename-conversation"
+            type="button"
+            disabled
+          >
+            Rename
+          </button>
+          <button
+            class="btn-quiet"
+            id="delete-conversation"
+            type="button"
+            disabled
+          >
+            Delete
+          </button>
         </header>
 
-        <section class="log" id="message-log" role="log" aria-live="polite" aria-label="Conversation messages">
+        <section
+          class="log"
+          id="message-log"
+          role="log"
+          aria-live="polite"
+          aria-label="Conversation messages"
+        >
           <div class="thread" id="message-thread"></div>
         </section>
         <div class="notice error" id="app-error" role="alert" hidden></div>
         <form class="composer" id="composer" autocomplete="off">
-          <label class="sr-only" for="message-input">Message the IT support assistant</label>
+          <label class="sr-only" for="message-input"
+            >Message the IT support assistant</label
+          >
           <div class="composer-box">
-            <textarea id="message-input" rows="1" maxlength="4000" placeholder="Describe what's wrong" disabled></textarea>
+            <textarea
+              id="message-input"
+              rows="1"
+              maxlength="4000"
+              placeholder="Describe what's wrong"
+              disabled
+            ></textarea>
             <button class="btn-send" id="send-message" type="submit" disabled>
               <span>Send</span>
               <span aria-hidden="true">→</span>
             </button>
           </div>
-          <p class="composer-hint">Your conversations are private to your account. Actions require your approval.</p>
+          <p class="composer-hint">
+            Your conversations are private to your account. Actions require your
+            approval.
+          </p>
         </form>
-        <section class="log" id="admin-root" aria-labelledby="admin-title" hidden>
+        <section
+          class="log"
+          id="admin-root"
+          aria-labelledby="admin-title"
+          hidden
+        >
           <div class="thread">
             <header class="card-head">
               <div>
                 <p class="workspace-label">NEXUS ADMINISTRATION</p>
                 <h1 id="admin-title">Administrator dashboard</h1>
               </div>
-              <button class="btn-quiet" id="admin-back" type="button">Back to conversations</button>
+              <button class="btn-quiet" id="admin-back" type="button">
+                Back to conversations
+              </button>
             </header>
             <nav class="approval-actions" aria-label="Administrator sections">
-              <button class="btn btn-secondary" id="admin-overview-tab" type="button" aria-current="page">Overview</button>
-              <button class="btn btn-secondary" id="admin-users-tab" type="button">Users</button>
-              <button class="btn btn-secondary" id="admin-audit-tab" type="button">Audit log</button>
+              <button
+                class="btn btn-secondary"
+                id="admin-overview-tab"
+                type="button"
+                aria-current="page"
+              >
+                Overview
+              </button>
+              <button
+                class="btn btn-secondary"
+                id="admin-users-tab"
+                type="button"
+              >
+                Users
+              </button>
+              <button class="btn btn-secondary" id="admin-ai-tab" type="button">
+                AI Models
+              </button>
+              <button class="btn btn-secondary" id="admin-embeddings-tab" type="button">
+                Embeddings
+              </button>
+              <button class="btn btn-secondary" id="admin-memory-tab" type="button">
+                Memory &amp; Retrieval
+              </button>
+              <button class="btn btn-secondary" id="admin-settings-tab" type="button">
+                Settings
+              </button>
+              <button
+                class="btn btn-secondary"
+                id="admin-audit-tab"
+                type="button"
+              >
+                Audit log
+              </button>
             </nav>
-            <section class="card" id="admin-overview" aria-labelledby="admin-overview-title">
+            <section
+              class="card"
+              id="admin-overview"
+              aria-labelledby="admin-overview-title"
+            >
               <div class="card-body">
                 <h2 id="admin-overview-title">System overview</h2>
-                <p id="admin-health" role="status">Checking service status...</p>
-                <p class="summary">Runtime AI settings and audit browsing are not available in the current backend API.</p>
+                <p id="admin-health" role="status">
+                  Checking service status...
+                </p>
+                <div class="approval-actions">
+                  <h3>Runtime system status</h3>
+                  <button class="btn btn-secondary" id="admin-system-refresh" type="button">
+                    Refresh status
+                  </button>
+                </div>
+                <p id="admin-system-status" role="status" aria-live="polite">
+                  Open this section to check runtime configuration.
+                </p>
+                <ul class="findings" id="admin-system-details"></ul>
+                <p class="summary">
+                  Provider status reflects local configuration. External provider connectivity is not checked.
+                </p>
+                <p class="summary">
+                  Manage supported chat models from AI Models. Changes are saved
+                  for review only and do not activate on restart. Update the backend
+                  .env and restart to change the active model.
+                </p>
               </div>
             </section>
-            <section class="card" id="admin-users" aria-labelledby="admin-users-title" hidden>
+            <section
+              class="card"
+              id="admin-users"
+              aria-labelledby="admin-users-title"
+              hidden
+            >
               <div class="card-body">
                 <h2 id="admin-users-title">User accounts</h2>
                 <p id="admin-users-status" role="status"></p>
                 <ul class="ticket-list" id="admin-user-list"></ul>
                 <div class="approval-actions">
-                  <button class="btn btn-secondary" id="admin-users-previous" type="button" disabled>Previous</button>
+                  <button
+                    class="btn btn-secondary"
+                    id="admin-users-previous"
+                    type="button"
+                    disabled
+                  >
+                    Previous
+                  </button>
                   <span id="admin-users-page" aria-live="polite"></span>
-                  <button class="btn btn-secondary" id="admin-users-next" type="button" disabled>Next</button>
+                  <button
+                    class="btn btn-secondary"
+                    id="admin-users-next"
+                    type="button"
+                    disabled
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             </section>
-            <section class="card" id="admin-audit" aria-labelledby="admin-audit-title" hidden>
+            <section
+              class="card"
+              id="admin-ai"
+              aria-labelledby="admin-ai-title"
+              hidden
+            >
+              <div class="card-body">
+                <h2 id="admin-ai-title">Chat model configuration</h2>
+                <p class="summary">
+                  Choose only a provider and model supported by this server.
+                  Saving records a choice for review but does not activate it.
+                  The active model comes from backend .env at startup.
+                </p>
+                <p id="admin-ai-active" role="status">
+                  Loading active model...
+                </p>
+                <p id="admin-ai-saved">No saved model selection.</p>
+                <label for="admin-ai-provider">Provider</label>
+                <select class="btn-quiet" id="admin-ai-provider"></select>
+                <label for="admin-ai-model">Model</label>
+                <select class="btn-quiet" id="admin-ai-model"></select>
+                <div class="approval-actions">
+                  <button
+                    class="btn btn-secondary"
+                    id="admin-ai-validate"
+                    type="button"
+                  >
+                    Validate selection
+                  </button>
+                  <button
+                    class="btn btn-primary"
+                    id="admin-ai-save"
+                    type="button"
+                    disabled
+                  >
+                    Save selection
+                  </button>
+                </div>
+                <p id="admin-ai-status" role="status" aria-live="polite"></p>
+              </div>
+            </section>
+            <section
+              class="card"
+              id="admin-embeddings"
+              aria-labelledby="admin-embeddings-title"
+              hidden
+            >
+              <div class="card-body">
+                <h2 id="admin-embeddings-title">Embedding and retrieval status</h2>
+                <p class="summary">
+                  Review the configured embedding provider, vector store, and source manual.
+                  These values show setup only; they do not verify external connectivity or index health.
+                </p>
+                <p id="admin-embeddings-status" role="status" aria-live="polite">
+                  Open this section to check embedding configuration.
+                </p>
+                <ul class="findings" id="admin-embeddings-details"></ul>
+                <p class="summary" id="admin-embeddings-note"></p>
+              </div>
+            </section>
+            <section
+              class="card"
+              id="admin-memory"
+              aria-labelledby="admin-memory-title"
+              hidden
+            >
+              <div class="card-body">
+                <h2 id="admin-memory-title">Memory and retrieval</h2>
+                <p class="summary">
+                  Review configured memory layers and retrieval sources. This view does not inspect user conversations or verify vector-store connectivity.
+                </p>
+                <p id="admin-memory-status" role="status" aria-live="polite">
+                  Open this section to check memory configuration.
+                </p>
+                <ul class="findings" id="admin-memory-details"></ul>
+              </div>
+            </section>
+            <section
+              class="card"
+              id="admin-settings"
+              aria-labelledby="admin-settings-title"
+              hidden
+            >
+              <div class="card-body">
+                <h2 id="admin-settings-title">Application settings</h2>
+                <p class="summary">
+                  These values are supplied by the server configuration. Editing application-wide settings is not currently supported here.
+                </p>
+                <p id="admin-settings-status" role="status" aria-live="polite">
+                  Open this section to check application settings.
+                </p>
+                <ul class="findings" id="admin-settings-details"></ul>
+              </div>
+            </section>
+            <section
+              class="card"
+              id="admin-audit"
+              aria-labelledby="admin-audit-title"
+              hidden
+            >
               <div class="card-body">
                 <h2 id="admin-audit-title">Account audit log</h2>
                 <p id="admin-audit-status" role="status" aria-live="polite"></p>
-                <button class="btn btn-secondary" id="admin-audit-refresh" type="button">Refresh events</button>
+                <button
+                  class="btn btn-secondary"
+                  id="admin-audit-refresh"
+                  type="button"
+                >
+                  Refresh events
+                </button>
                 <ul class="ticket-list" id="admin-audit-list"></ul>
                 <div class="approval-actions">
-                  <button class="btn btn-secondary" id="admin-audit-previous" type="button" disabled>Previous</button>
+                  <button
+                    class="btn btn-secondary"
+                    id="admin-audit-previous"
+                    type="button"
+                    disabled
+                  >
+                    Previous
+                  </button>
                   <span id="admin-audit-page" aria-live="polite"></span>
-                  <button class="btn btn-secondary" id="admin-audit-next" type="button" disabled>Next</button>
+                  <button
+                    class="btn btn-secondary"
+                    id="admin-audit-next"
+                    type="button"
+                    disabled
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             </section>
@@ -143,9 +390,9 @@
       </main>
     </div>
 
-    <script src="api.js?v=auth-flow-2"></script>
+    <script src="api.js?v=admin-system-status-1"></script>
     <script src="conversations.js"></script>
     <script src="auth.js"></script>
-    <script src="admin.js"></script>
+    <script src="admin.js?v=admin-model-activation-copy-1"></script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-/* Shared same-origin API calls for login and private conversation data. */
+/* Shared same-origin API calls for account, conversation, and administrator workflows. */
 (function attachSupportApi(window, document) {
   "use strict";
 
@@ -54,7 +54,9 @@
     }
     if (status === 401) return "Your session expired. Sign in again.";
     if (status === 404) return "Sign-in service not found. Open the app at http://127.0.0.1:8000/.";
-    if (status === 422) return validationMessage(detail);
+    if (status === 422) {
+      return typeof detail === "string" ? detail : validationMessage(detail);
+    }
     if (status >= 500) return "The server encountered an error. Check the backend terminal and try again.";
     if (typeof detail === "string" && detail) return detail;
     return `Request rejected (HTTP ${status}). Check the fields and try again.`;
@@ -121,12 +123,38 @@
     }),
     /** Return the current authenticated account. */
     currentUser: () => request("/api/auth/me"),
+    /** Read the authenticated account's saved interface preferences. */
+    userSettings: () => request("/api/settings"),
+    /** Save the authenticated account's supported interface preferences. */
+    saveUserSettings: (settings) => request("/api/settings", {
+      method: "PUT",
+      body: settings,
+      csrf: true,
+    }),
     /** Return a bounded administrator-only page of safe account metadata. */
     adminUsers: (limit = 20, offset = 0) =>
       request(`/api/auth/admin/users?limit=${limit}&offset=${offset}`),
     /** Return a bounded administrator-only page of safe account audit events. */
     adminAudit: (limit = 20, offset = 0) =>
       request(`/api/auth/admin/audit?limit=${limit}&offset=${offset}`),
+    /** Read active and saved chat-model configuration and supported choices for an administrator. */
+    adminAIConfig: () => request("/api/auth/admin/ai-config"),
+    /** Read configured embedding components without exposing credentials or local paths. */
+    adminEmbeddingStatus: () => request("/api/auth/admin/ai-config/embeddings"),
+    /** Read safe runtime readiness details through the administrator-only API. */
+    adminSystemStatus: () => request("/api/auth/admin/ai-config/system-status"),
+    /** Validate a provider/model pair without saving it. */
+    validateAdminAI: (provider, model) => request("/api/auth/admin/ai-config/validate", {
+      method: "POST",
+      body: { provider, model },
+      csrf: true,
+    }),
+    /** Save a validated non-secret provider/model pair for a later backend restart. */
+    saveAdminAI: (provider, model) => request("/api/auth/admin/ai-config", {
+      method: "PUT",
+      body: { provider, model },
+      csrf: true,
+    }),
     /** Update one account's role and active state through the administrator-only endpoint. */
     updateAdminUser: (userId, role, isActive) => request(
       `/api/auth/admin/users/${encodeURIComponent(userId)}`,

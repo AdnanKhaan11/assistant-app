@@ -12,12 +12,17 @@ function makeElement() {
     disabled: false,
     value: "",
     textContent: "",
+    className: "",
     dataset: {},
+    children: [],
     listeners: {},
+    attributes: {},
     classList: {
       add() {},
       toggle() {},
     },
+    append(...children) { this.children.push(...children); },
+    setAttribute(name, value) { this.attributes[name] = value; },
     addEventListener(name, callback) {
       this.listeners[name] = callback;
     },
@@ -40,7 +45,13 @@ function loadAuth(api) {
     "sign-out",
   ];
   const elements = Object.fromEntries(ids.map((id) => [id, makeElement()]));
-  const document = { getElementById: (id) => elements[id] };
+  const railFoot = makeElement();
+  elements["sign-out"].parentElement = railFoot;
+  const document = {
+    getElementById: (id) => elements[id],
+    createElement: () => makeElement(),
+    documentElement: { dataset: {} },
+  };
   const window = {
     SupportApi: api,
     PrivateConversations: {
@@ -52,21 +63,26 @@ function loadAuth(api) {
     },
   };
   vm.runInNewContext(authScript, { window, document });
-  return elements;
+  return { elements, railFoot, document };
 }
 
 test("restores a cookie session without asking for credentials again", async () => {
-  const elements = loadAuth({ currentUser: async () => ({ email: "person@example.test" }) });
+  const { elements, railFoot } = loadAuth({
+    currentUser: async () => ({ email: "person@example.test" }),
+    userSettings: async () => ({ theme: "dark" }),
+  });
   await new Promise((resolve) => setImmediate(resolve));
 
   assert.equal(elements["auth-root"].hidden, true);
   assert.equal(elements["app-root"].hidden, false);
   assert.equal(elements["account-email"].textContent, "person@example.test");
+  assert.equal(railFoot.children[0].className, "user-preferences");
+  assert.equal(railFoot.children[0].children[1].value, "dark");
 });
 
 test("registration returns to login, and sign-in opens the account view", async () => {
   const calls = [];
-  const elements = loadAuth({
+  const { elements } = loadAuth({
     currentUser: async () => { throw Object.assign(new Error("expired"), { status: 401 }); },
     register: async (...args) => calls.push(["register", ...args]),
     login: async (...args) => {
@@ -93,7 +109,7 @@ test("registration returns to login, and sign-in opens the account view", async 
 });
 
 test("sign-out waits for server revocation before showing login", async () => {
-  const elements = loadAuth({
+  const { elements } = loadAuth({
     currentUser: async () => ({ email: "person@example.test" }),
     logout: async () => {},
   });
@@ -104,4 +120,41 @@ test("sign-out waits for server revocation before showing login", async () => {
   assert.equal(elements["app-root"].hidden, true);
   assert.equal(elements["auth-root"].hidden, false);
   assert.equal(elements["auth-form"].dataset.mode, "login");
+});
+
+test("theme changes apply only after the server confirms the saved preference", async () => {
+  const calls = [];
+  const { railFoot, document } = loadAuth({
+    currentUser: async () => ({ email: "person@example.test" }),
+    userSettings: async () => ({ theme: "dark" }),
+    saveUserSettings: async (settings) => {
+      calls.push(settings);
+      return settings;
+    },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  const control = railFoot.children[0].children[1];
+  control.value = "light";
+  await control.listeners.change();
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].theme, "light");
+  assert.equal(document.documentElement.dataset.theme, "light");
+  assert.equal(railFoot.children[0].children[2].textContent, "Saved light theme.");
+});
+
+test("theme save failure restores the last server-confirmed appearance", async () => {
+  const { railFoot, document } = loadAuth({
+    currentUser: async () => ({ email: "person@example.test" }),
+    userSettings: async () => ({ theme: "dark" }),
+    saveUserSettings: async () => { throw new Error("Preference could not be saved."); },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  const control = railFoot.children[0].children[1];
+  control.value = "light";
+  await control.listeners.change();
+
+  assert.equal(control.value, "dark");
+  assert.equal(document.documentElement.dataset.theme, "dark");
+  assert.equal(railFoot.children[0].children[2].textContent, "Preference could not be saved.");
 });

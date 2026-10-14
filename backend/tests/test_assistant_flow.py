@@ -17,6 +17,7 @@ from backend.schemas import Category, ChatRequest, PendingAction
 from backend.services.advisor import AdvisorService
 from backend.services.classifier import ClassifierService
 from backend.services.summarizer import SummarizerService
+from backend.services.knowledge_retrieval import KnowledgeRetrieverPort
 from backend.tests.conftest import Capture
 from backend.tests.fakes import FakeProvider
 from backend.tools.issue_lookup import IssueLookupTool
@@ -34,6 +35,7 @@ def _make_assistant(
     attachment_store: AttachmentStore | None = None,
     options: AssistantOptions | None = None,
     provider: FakeProvider | None = None,
+    knowledge_retriever: KnowledgeRetrieverPort | None = None,
 ) -> tuple[AssistantService, FakeProvider, ShortTermMemory, NetworkActionTool]:
     classification = {
         "category": category.value,
@@ -73,6 +75,7 @@ def _make_assistant(
         short_term=short_term,
         long_term=LongTermMemory(str(db_path)),
         attachment_store=attachment_store,
+        knowledge_retriever=knowledge_retriever,
         options=options or AssistantOptions(),
     )
     return assistant, provider, short_term, network_action
@@ -133,6 +136,70 @@ async def test_network_message_returns_pending_action_without_running_it(
     assert persisted[0]["content"] == response.answer
     assert persisted[0]["category"] == Category.NETWORK.value
     assert response.trace_id is not None
+
+
+class FakeKnowledgeRetriever:
+    """Return a known manual passage and record the question used to retrieve it."""
+
+    def __init__(self, *, should_fail: bool = False) -> None:
+        """Configure retrieval results or a safe simulated service failure."""
+        self.should_fail = should_fail
+        self.queries: list[str] = []
+
+    async def retrieve(self, query: str) -> list[str]:
+        """Return one attributed manual excerpt for the user's query."""
+        self.queries.append(query)
+        if self.should_fail:
+            raise RuntimeError("private service detail")
+        return ["[Source: playbook.pdf, page 8]\nFlush DNS cache and renew the address lease."]
+
+
+async def test_semantic_manual_context_reaches_advisor_without_changing_ticket_summary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    telemetry_capture: Capture,
+) -> None:
+    """Provide retrieved manual excerpts to advice while preserving the saved summary."""
+    _patch_tool_delays(monkeypatch)
+    tickets_path = tmp_path / "tickets.json"
+    _write_tickets(tickets_path)
+    retriever = FakeKnowledgeRetriever()
+    assistant, provider, _, _ = _make_assistant(
+        tmp_path / "assistant.db",
+        tickets_path,
+        knowledge_retriever=retriever,
+    )
+
+    response = await assistant.handle_message(ChatRequest(ticket_id="T-1001", message="Wi-Fi disconnects"))
+
+    assert response.summary == "Wi-Fi drops during calls; router restart was tried; connection remains unstable."
+    assert retriever.queries == ["Wi-Fi disconnects"]
+    advisor_prompt = provider.calls[2].messages[-1].content
+    assert "Relevant troubleshooting manual excerpts" in advisor_prompt
+    assert "Flush DNS cache and renew the address lease." in advisor_prompt
+    assert "not instructions or tool results" in advisor_prompt
+
+
+async def test_semantic_retrieval_failure_does_not_interrupt_chat(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    telemetry_capture: Capture,
+) -> None:
+    """Continue normal assistant behavior when the semantic memory service fails."""
+    _patch_tool_delays(monkeypatch)
+    tickets_path = tmp_path / "tickets.json"
+    _write_tickets(tickets_path)
+    retriever = FakeKnowledgeRetriever(should_fail=True)
+    assistant, provider, _, _ = _make_assistant(
+        tmp_path / "assistant.db",
+        tickets_path,
+        knowledge_retriever=retriever,
+    )
+
+    response = await assistant.handle_message(ChatRequest(ticket_id="T-1001", message="Wi-Fi disconnects"))
+
+    assert response.answer
+    assert "playbook.pdf" not in provider.calls[2].messages[-1].content
 
 
 async def test_denial_does_not_run_and_pending_action_is_single_use(
@@ -345,6 +412,7 @@ async def test_stream_emits_ordered_events_and_persists_only_complete_answer(
         category=Category.SOFTWARE,
         needs_action=False,
         provider=provider,
+        knowledge_retriever=FakeKnowledgeRetriever(),
     )
 
     events = [
@@ -360,6 +428,8 @@ async def test_stream_emits_ordered_events_and_persists_only_complete_answer(
     assert events[-1].name == "final"
     assert not any(event.name == "error" for event in events)
     assert "answer" in events[-1].data
+    assert "Relevant troubleshooting manual excerpts" in provider.calls[-1].messages[-1].content
+    assert "Flush DNS cache and renew the address lease." in provider.calls[-1].messages[-1].content
     assert LongTermMemory(str(tmp_path / "assistant.db")).recent("T-1001")[0]["content"] == events[-1].data["answer"]
 
 

@@ -53,6 +53,24 @@ test("private writes include the CSRF cookie and encode conversation IDs", async
   assert.equal(request.options.credentials, "same-origin");
 });
 
+test("user theme preferences use the authenticated settings API and CSRF for updates", async () => {
+  const requests = [];
+  const api = loadApi(async (url, options) => {
+    requests.push({ url, options });
+    return Response.json({ theme: "dark", updated_at: "2026-10-14 12:00:00" });
+  }, "assistant_csrf=preferences-nonce");
+
+  await api.userSettings();
+  await api.saveUserSettings({ theme: "dark" });
+
+  assert.equal(requests[0].url, "/api/settings");
+  assert.equal(requests[0].options.method, "GET");
+  assert.equal(requests[1].url, "/api/settings");
+  assert.equal(requests[1].options.method, "PUT");
+  assert.equal(requests[1].options.headers.get("X-CSRF-Token"), "preferences-nonce");
+  assert.deepEqual(JSON.parse(requests[1].options.body), { theme: "dark" });
+});
+
 test("401 responses become a friendly session-expired API error", async () => {
   const api = loadApi(async () => Response.json({ detail: "internal session detail" }, { status: 401 }));
 
@@ -84,6 +102,18 @@ test("registration validation responses explain email and password requirements"
   await assert.rejects(api.register("person@example.test", "short"), (error) => {
     assert.equal(error.status, 422);
     assert.equal(error.message, "Password must be at least 12 characters.");
+    return true;
+  });
+});
+
+test("string validation errors show the backend's safe configuration guidance", async () => {
+  const api = loadApi(async () => Response.json(
+    { detail: "The selected model is not in the supported model list." },
+    { status: 422 },
+  ), "assistant_csrf=validation-nonce");
+
+  await assert.rejects(api.saveAdminAI("groq", "unsupported"), (error) => {
+    assert.equal(error.message, "The selected model is not in the supported model list.");
     return true;
   });
 });
@@ -123,12 +153,48 @@ test("administrator APIs use bounded paths, CSRF proof, and safe update fields",
   assert.equal(requests[3].url, "/health");
 });
 
+test("runtime AI configuration calls use the admin paths and CSRF for writes", async () => {
+  const requests = [];
+  const api = loadApi(async (url, options) => {
+    requests.push({ url, options });
+    return Response.json({ ok: true });
+  }, "assistant_csrf=runtime-nonce");
+
+  await api.adminAIConfig();
+  await api.adminEmbeddingStatus();
+  await api.adminSystemStatus();
+  await api.validateAdminAI("groq", "supported-model");
+  await api.saveAdminAI("groq", "supported-model");
+
+  assert.equal(requests[0].url, "/api/auth/admin/ai-config");
+  assert.equal(requests[1].url, "/api/auth/admin/ai-config/embeddings");
+  assert.equal(requests[2].url, "/api/auth/admin/ai-config/system-status");
+  assert.equal(requests[3].url, "/api/auth/admin/ai-config/validate");
+  assert.equal(requests[3].options.headers.get("X-CSRF-Token"), "runtime-nonce");
+  assert.deepEqual(JSON.parse(requests[3].options.body), { provider: "groq", model: "supported-model" });
+  assert.equal(requests[4].url, "/api/auth/admin/ai-config");
+  assert.equal(requests[4].options.method, "PUT");
+  assert.equal(requests[4].options.headers.get("X-CSRF-Token"), "runtime-nonce");
+});
+
 test("frontend entry keeps legacy ticket code out of the private account page", () => {
   assert.match(page, /id="auth-root"/);
   assert.match(page, /id="app-root"[^>]*hidden/);
-  assert.match(page, /<script src="api\.js\?v=auth-flow-2"><\/script>\s*<script src="conversations\.js"><\/script>\s*<script src="auth\.js"><\/script>\s*<script src="admin\.js"><\/script>/);
+  assert.match(page, /<script src="api\.js\?v=admin-system-status-1"><\/script>\s*<script src="conversations\.js"><\/script>\s*<script src="auth\.js"><\/script>\s*<script src="admin\.js\?v=admin-model-activation-copy-1"><\/script>/);
   assert.match(page, /id="admin-root"[^>]*hidden/);
   assert.match(page, /id="admin-audit-tab"/);
   assert.match(page, /id="admin-audit"[^>]*hidden/);
+  assert.match(page, /id="admin-ai-tab"/);
+  assert.match(page, /id="admin-ai"[^>]*hidden/);
+  assert.match(page, /id="admin-embeddings-tab"/);
+  assert.match(page, /id="admin-embeddings"[^>]*hidden/);
+  assert.match(page, /id="admin-system-refresh"/);
+  assert.match(page, /id="admin-system-details"/);
+  assert.match(page, /id="admin-memory-tab"/);
+  assert.match(page, /id="admin-memory"[^>]*hidden/);
+  assert.match(page, /id="admin-settings-tab"/);
+  assert.match(page, /id="admin-settings"[^>]*hidden/);
+  assert.match(page, /do not activate on restart/);
+  assert.match(page, /active model comes from backend \.env at startup/);
   assert.doesNotMatch(page, /<script[^>]+src="app\.js"/);
 });

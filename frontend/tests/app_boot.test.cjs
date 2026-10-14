@@ -43,6 +43,11 @@ test("loads the origin redirect before page styles and account API scripts", () 
 
 test("styles the account composer textarea instead of the legacy chat field", () => {
   const stylesheet = fs.readFileSync(path.join(__dirname, "..", "styles.css"), "utf8");
-  assert.match(stylesheet, /#message-input\s*\{[^}]*flex:\s*1;[^}]*min-height:\s*41px;[^}]*resize:\s*none;/s);
+  assert.match(stylesheet, /#message-input\s*\{[^}]*flex:\s*1 1 0;[^}]*width:\s*0;[^}]*min-height:\s*41px;[^}]*resize:\s*none;/s);
   assert.match(stylesheet, /#message-input::placeholder/);
+});
+
+test("requests a fresh composer stylesheet after each layout correction", () => {
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  assert.match(html, /href="styles\.css\?v=prompt-layout-2"/);
 });

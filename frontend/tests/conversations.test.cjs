@@ -5,6 +5,7 @@ const vm = require("node:vm");
 const test = require("node:test");
 
 const script = fs.readFileSync(path.join(__dirname, "..", "conversations.js"), "utf8");
+const stylesheet = fs.readFileSync(path.join(__dirname, "..", "styles.css"), "utf8");
 
 /** Provide the small DOM surface used by the conversation module. */
 function makeElement(tagName = "div") {
@@ -57,6 +58,13 @@ function loadModule(api) {
 function visibleText(node) {
   return [node.textContent, ...node.children.map(visibleText)].join(" ");
 }
+
+test("recommendations use full-width numbered rows without a narrow icon column", () => {
+  assert.match(stylesheet, /\.steps\s*\{[^}]*list-style:\s*none;[^}]*counter-reset:\s*recommendation-step;/s);
+  assert.match(stylesheet, /\.steps li\s*\{[^}]*padding:\s*10px 13px 10px 43px;[^}]*overflow-wrap:\s*anywhere;/s);
+  assert.match(stylesheet, /\.steps li::before\s*\{[^}]*content:\s*counter\(recommendation-step\);/s);
+  assert.doesNotMatch(stylesheet, /\.steps li\s*\{[^}]*grid-template-columns:\s*19px 1fr;/s);
+});
 
 test("loads private history and inserts untrusted message text as text", async () => {
   const hostile = "<img src=x onerror=alert(1)>";
